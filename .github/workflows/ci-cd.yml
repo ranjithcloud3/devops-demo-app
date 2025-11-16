@@ -1,0 +1,47 @@
+name: CI/CD Pipeline
+
+# Trigger on push or pull request to main branch
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # 4️⃣ Run a simple test
+      - name: Run test
+        run: python -c "import flask; print('Flask import OK')"
+
+      # 5️⃣ Build Docker image
+      - name: Build Docker image
+        run: docker build -t devops-demo:latest .
+
+      # 6️⃣ Log in to Docker Hub using secrets
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # 7️⃣ Tag and push Docker image
+      - name: Push Docker image
+        run: |
+          docker tag devops-demo:latest ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+
